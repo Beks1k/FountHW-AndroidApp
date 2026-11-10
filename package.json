@@ -1,0 +1,41 @@
+{
+  "name": "founthw",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "emulators": "firebase emulators:start --only auth,firestore --project demo-founthw",
+    "test:rules": "node rules-test.mjs",
+    "test:app": "node appstate-test.mjs"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/core": "^8.6.0",
+    "firebase": "^13.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^4.0.0",
+    "@capacitor/cli": "^8.6.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.0"
+  },
+  "allowScripts": {
+    "esbuild@0.21.5": true
+  },
+  "description": "> ### ⚠️ Disclaimer > >!!!IF YOU HATE AI AND PROJECTSA MADE BY ITS HAND PLEASE LEAVE THIS REPOSITORY PAGE AND DONT HATE THE PROJECT > > This project is in **beta** and was **built with the assistance of AI**. > > The code has not been reviewed by a professional security auditor, and no > formal security testing has been carried out. It is provided as-is, for > educational and personal use. > > You are responsible for your own data. Review the > [Firestore rules](firestore.rules) before trusting it with anything > sensitive, and do not use it to store confidential or regulated information. > The authors accept no liability for data loss, security incidents, or any > other damage arising from use of this software.",
+  "main": "vite.config.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Beks1k/FountHW.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/Beks1k/FountHW/issues"
+  },
+  "homepage": "https://github.com/Beks1k/FountHW#readme"
+}
