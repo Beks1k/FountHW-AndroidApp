@@ -35,6 +35,7 @@ export default function TeacherDashboard({ userData }) {
   const [hwDesc, setHwDesc] = useState('')
   const [hwDue, setHwDue] = useState('')
   const [hwMaxGrade, setHwMaxGrade] = useState(100)
+  const [hwGraded, setHwGraded] = useState(true)
   const [hwGroups, setHwGroups] = useState([])
   const [annTitle, setAnnTitle] = useState('')
   const [annMsg, setAnnMsg] = useState('')
@@ -120,7 +121,8 @@ export default function TeacherDashboard({ userData }) {
         title: hwTitle,
         description: hwDesc,
         dueDate: hwDue,
-        maxGrade: Number(hwMaxGrade),
+        graded: hwGraded,
+        maxGrade: hwGraded ? Number(hwMaxGrade) : null,
         groupIds: hwGroups.length ? hwGroups : ['*'],
         createdAt: new Date().toISOString(),
       })
@@ -132,6 +134,7 @@ export default function TeacherDashboard({ userData }) {
     setHwDesc('')
     setHwDue('')
     setHwMaxGrade(100)
+    setHwGraded(true)
     setHwGroups([])
     setShowCreateHw(false)
   }
@@ -208,7 +211,14 @@ export default function TeacherDashboard({ userData }) {
     return ids.map((id) => classInfo.groups[id] || 'Unknown group').join(', ')
   }
 
-  const toGrade = submissions.filter((s) => s.status === 'done').length
+  // Old homeworks have no "graded" field, so anything except an explicit false counts as graded.
+  const isGraded = (hw) => hw?.graded !== false
+
+  const toGrade = submissions.filter((s) => {
+    if (s.status !== 'done') return false
+    const hw = homework.find((h) => h.id === s.homeworkId)
+    return isGraded(hw)
+  }).length
 
   const classAverage = useMemo(() => {
     const graded = submissions.filter((s) => s.status === 'graded' && s.grade != null)
@@ -367,7 +377,7 @@ export default function TeacherDashboard({ userData }) {
                   <div style={{ minWidth: 0 }}>
                     <div className="card-title">{hw.title}</div>
                     <div className="card-sub">
-                      Due {hw.dueDate} · {hw.maxGrade || 100} points
+                      Due {hw.dueDate} · {isGraded(hw) ? `${hw.maxGrade || 100} points` : 'Not graded'}
                     </div>
                   </div>
                   <div className="hstack">
@@ -389,6 +399,7 @@ export default function TeacherDashboard({ userData }) {
                     lineHeight: 1.55,
                   }}
                 >
+                  <strong>Homework: </strong>
                   {hw.description}
                 </p>
 
@@ -406,12 +417,14 @@ export default function TeacherDashboard({ userData }) {
                             {sub.status === 'graded'
                               ? `Graded ${sub.grade} / ${hw.maxGrade || 100}`
                               : sub.status === 'done'
-                              ? 'Submitted, waiting for a grade'
+                              ? (isGraded(hw) ? 'Submitted, waiting for a grade' : 'Marked as done')
                               : 'Pending'}
                           </div>
                         </div>
                         <div className="row-actions">
-                          {sub.status === 'graded' ? (
+                          {!isGraded(hw) ? (
+                            <span className="chip green dot">Done</span>
+                          ) : sub.status === 'graded' ? (
                             <span className="chip green dot">
                               {sub.grade}/{hw.maxGrade || 100}
                             </span>
@@ -514,7 +527,7 @@ export default function TeacherDashboard({ userData }) {
             <h3>New homework</h3>
             <form onSubmit={createHomework}>
               <div className="field">
-                <label>Title</label>
+                <label>Theme of the lesson</label>
                 <input
                   className="input"
                   value={hwTitle}
@@ -523,7 +536,7 @@ export default function TeacherDashboard({ userData }) {
                 />
               </div>
               <div className="field">
-                <label>Description</label>
+                <label>Homework</label>
                 <textarea
                   className="input"
                   rows={4}
@@ -544,17 +557,34 @@ export default function TeacherDashboard({ userData }) {
                   />
                 </div>
                 <div className="field">
-                  <label>Maximum grade</label>
+                  <label>Maximum points</label>
                   <input
                     className="input"
                     type="number"
                     min="1"
-                    value={hwMaxGrade}
+                    value={hwGraded ? hwMaxGrade : ''}
+                    disabled={!hwGraded}
                     onChange={(e) => setHwMaxGrade(e.target.value)}
-                    required
+                    required={hwGraded}
                   />
                 </div>
               </div>
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  margin: '4px 0 14px',
+                  cursor: 'pointer',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={!hwGraded}
+                  onChange={(e) => setHwGraded(!e.target.checked)}
+                />
+                <span>Do not grade this homework (no points)</span>
+              </label>
               <GroupTargetPicker
                 groups={classInfo.groups}
                 value={hwGroups}

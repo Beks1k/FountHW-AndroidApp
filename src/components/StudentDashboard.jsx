@@ -21,6 +21,9 @@ export default function StudentDashboard({ userData }) {
   const [submissions, setSubmissions] = useState([])
   const [submittedHwIds, setSubmittedHwIds] = useState(new Set())
   const [classInfo, setClassInfo] = useState({ name: '', groups: {} })
+  const [selectedId, setSelectedId] = useState(null)
+  const [hoveredId, setHoveredId] = useState(null)
+  
 
   useEffect(() => {
     if (!userData.classId) return
@@ -123,6 +126,10 @@ export default function StudentDashboard({ userData }) {
   const getSubmissionForHw = (hwId) =>
     submissions.find((s) => s.homeworkId === hwId) ||
     submittedHwIds.has(hwId)
+
+  // Old homeworks have no "graded" field, so anything except an explicit false counts as graded.
+  const isGraded = (hw) => hw?.graded !== false
+  const selectedHw = homework.find((h) => h.id === selectedId) || null
 
   const myGroupName = userData.groupId ? classInfo.groups[userData.groupId] : null
 
@@ -242,20 +249,45 @@ export default function StudentDashboard({ userData }) {
               <div className="empty">No homework assigned yet</div>
             ) : (
               <div className="list">
-                {homework.map((hw) => {
-                  const sub = getSubmissionForHw(hw.id)
-                  const max = hw.maxGrade || 100
-                  return (
-                    <div
-                      key={hw.id}
-                      className="row"
-                      style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}
-                    >
+            {homework.map((hw) => {
+              const sub = getSubmissionForHw(hw.id)
+              const max = hw.maxGrade || 100
+              const isHovered = hoveredId === hw.id
+
+              return (
+                <div
+                  key={hw.id}
+                  className="row"
+                  onClick={() => setSelectedId(hw.id)}
+                  onMouseEnter={() => setHoveredId(hw.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                  style={{
+                    flexDirection: 'column',
+                    alignItems: 'stretch',
+                    gap: 10,
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
+                    transform: isHovered ? 'translateY(-2px)' : 'none',
+                  }}
+                >
                       <div className="row-main">
                         <div className="row-title">{hw.title}</div>
                         <div className="row-meta">
-                          Due {hw.dueDate} · {max} points
+                          Due {hw.dueDate} · {isGraded(hw) ? `${max} points` : 'Not graded'}
                         </div>
+                        {hw.description && (
+                          <div
+                            className="row-meta"
+                            style={{
+                              marginTop: 4,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {hw.description}
+                          </div>
+                        )}
                         <div className="row-badges">
                           <span className="chip accent">{targetLabel(hw.groupIds)}</span>
                           {sub?.status === 'graded' ? (
@@ -272,7 +304,10 @@ export default function StudentDashboard({ userData }) {
                       {!sub?.status && (
                         <button
                           className="btn btn-ghost btn-sm"
-                          onClick={() => markDone(hw.id)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            markDone(hw.id)
+                          }}
                         >
                           Mark done
                         </button>
@@ -362,6 +397,64 @@ export default function StudentDashboard({ userData }) {
           )}
         </div>
       )}
+
+      {selectedHw && (() => {
+        const sub = getSubmissionForHw(selectedHw.id)
+        const graded = isGraded(selectedHw)
+        const max = selectedHw.maxGrade || 100
+        return (
+          <div className="modal-overlay" onClick={() => setSelectedId(null)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <h3>{selectedHw.title}</h3>
+
+              <div className="field">
+                <div className="stat-label">Homework</div>
+                <p style={{ lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
+                  {selectedHw.description || 'No description provided.'}
+                </p>
+              </div>
+
+              <div className="grid grid-2">
+                <div className="field">
+                  <div className="stat-label">Due date</div>
+                  <div>{selectedHw.dueDate || '—'}</div>
+                </div>
+                <div className="field">
+                  <div className="stat-label">Maximum points</div>
+                  <div>{graded ? max : 'Not graded'}</div>
+                </div>
+              </div>
+
+              <div className="row-badges" style={{ marginBottom: 6 }}>
+                <span className="chip accent">{targetLabel(selectedHw.groupIds)}</span>
+                {sub?.status === 'graded' ? (
+                  <span className="chip green dot">
+                    Graded {sub.grade}/{max}
+                  </span>
+                ) : sub ? (
+                  <span className="chip amber dot">Submitted</span>
+                ) : (
+                  <span className="chip">Not started</span>
+                )}
+              </div>
+
+              <div style={{ marginTop: 18 }}>
+                {!sub && (
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => markDone(selectedHw.id)}
+                  >
+                    Mark as done
+                  </button>
+                )}
+                <button className="btn btn-ghost" onClick={() => setSelectedId(null)}>
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </AppShell>
   )
 }
